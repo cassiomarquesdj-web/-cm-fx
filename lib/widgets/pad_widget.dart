@@ -192,6 +192,17 @@ class PadWidget extends StatelessWidget {
                         child: const Icon(Icons.repeat_rounded, size: 13, color: Colors.white),
                       ),
 
+                    // Trim / corte indicator
+                    if (pad.hasTrim)
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(Icons.content_cut_rounded, size: 13, color: Color(0xFF00BCD4)),
+                      ),
+
                     // Pitch indicator (only if not 1.0x)
                     if (pad.playbackRate != 1.0)
                       Container(

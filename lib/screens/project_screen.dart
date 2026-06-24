@@ -168,24 +168,35 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-                    child: GridView.builder(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 4,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 1.0,
-                      ),
-                      itemCount: _pads.length,
-                      itemBuilder: (context, index) {
-                        final pad = _pads[index];
-                        final isCurrentlyPlaying = _audioService.isPlaying(pad.position);
-                        return PadWidget(
-                          pad: pad,
-                          onTap: () => _playPad(pad),
-                          onEdit: () => _editPad(pad),
-                          onStop: isCurrentlyPlaying ? () => _audioService.stop(pad.position) : null,
-                          isLarge: false,
-                          isPlaying: isCurrentlyPlaying,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        const cols = 4;
+                        const spacing = 10.0;
+                        final rows = (_pads.length / cols).ceil().clamp(1, 99);
+                        final cellW = (constraints.maxWidth - spacing * (cols - 1)) / cols;
+                        final cellH = (constraints.maxHeight - spacing * (rows - 1)) / rows;
+                        final aspect = cellH > 0 ? cellW / cellH : 1.0;
+                        return GridView.builder(
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            crossAxisSpacing: spacing,
+                            mainAxisSpacing: spacing,
+                            childAspectRatio: aspect,
+                          ),
+                          itemCount: _pads.length,
+                          itemBuilder: (context, index) {
+                            final pad = _pads[index];
+                            final isCurrentlyPlaying = _audioService.isPlaying(pad.position);
+                            return PadWidget(
+                              pad: pad,
+                              onTap: () => _playPad(pad),
+                              onEdit: () => _editPad(pad),
+                              onStop: isCurrentlyPlaying ? () => _audioService.stop(pad.position) : null,
+                              isLarge: false,
+                              isPlaying: isCurrentlyPlaying,
+                            );
+                          },
                         );
                       },
                     ),
@@ -202,7 +213,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _stopAllAudio,
                   icon: const Icon(Icons.stop_rounded),
-                  label: const Text('Parar Todos'),
+                  label: const Text('PARAR TODOS',
+                      style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -210,7 +225,11 @@ class _ProjectScreenState extends State<ProjectScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _openStageMode,
                   icon: const Icon(Icons.fullscreen_rounded),
-                  label: const Text('Modo Palco'),
+                  label: const Text('MODO PALCO',
+                      style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                  ),
                 ),
               ),
             ],

@@ -7,10 +7,14 @@ class Pad {
   final String? audioPath;
   final int color; // ARGB value
 
-  // Audio playback settings (v0.2 improvements)
+  // Audio playback settings
   final double volume;        // 0.0 to 1.0
   final double playbackRate;  // 0.5x to 2.0x (affects pitch and speed)
   final bool isLoop;          // whether to loop the audio
+
+  // Trim / corte do áudio (v0.3.2) — em milissegundos
+  final int startMs;          // onde o trecho começa
+  final int endMs;            // onde o trecho termina (0 = até o fim do arquivo)
 
   Pad({
     this.id,
@@ -23,7 +27,11 @@ class Pad {
     this.volume = 1.0,
     this.playbackRate = 1.0,
     this.isLoop = false,
+    this.startMs = 0,
+    this.endMs = 0,
   });
+
+  bool get hasTrim => startMs > 0 || endMs > 0;
 
   Map<String, dynamic> toMap() {
     return {
@@ -37,6 +45,8 @@ class Pad {
       'volume': volume,
       'playback_rate': playbackRate,
       'is_loop': isLoop ? 1 : 0,
+      'start_ms': startMs,
+      'end_ms': endMs,
     };
   }
 
@@ -52,6 +62,8 @@ class Pad {
       volume: (map['volume'] as num?)?.toDouble() ?? 1.0,
       playbackRate: (map['playback_rate'] as num?)?.toDouble() ?? 1.0,
       isLoop: (map['is_loop'] as int? ?? 0) == 1,
+      startMs: (map['start_ms'] as int?) ?? 0,
+      endMs: (map['end_ms'] as int?) ?? 0,
     );
   }
 
@@ -66,6 +78,8 @@ class Pad {
     double? volume,
     double? playbackRate,
     bool? isLoop,
+    int? startMs,
+    int? endMs,
   }) {
     return Pad(
       id: id ?? this.id,
@@ -78,6 +92,8 @@ class Pad {
       volume: volume ?? this.volume,
       playbackRate: playbackRate ?? this.playbackRate,
       isLoop: isLoop ?? this.isLoop,
+      startMs: startMs ?? this.startMs,
+      endMs: endMs ?? this.endMs,
     );
   }
 }

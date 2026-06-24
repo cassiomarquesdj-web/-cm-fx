@@ -21,7 +21,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: _onConfigure,
@@ -53,6 +53,8 @@ class DatabaseService {
         volume REAL NOT NULL DEFAULT 1.0,
         playback_rate REAL NOT NULL DEFAULT 1.0,
         is_loop INTEGER NOT NULL DEFAULT 0,
+        start_ms INTEGER NOT NULL DEFAULT 0,
+        end_ms INTEGER NOT NULL DEFAULT 0,
         FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
       )
     ''');
@@ -67,6 +69,11 @@ class DatabaseService {
       await db.execute('ALTER TABLE pads ADD COLUMN volume REAL NOT NULL DEFAULT 1.0');
       await db.execute('ALTER TABLE pads ADD COLUMN playback_rate REAL NOT NULL DEFAULT 1.0');
       await db.execute('ALTER TABLE pads ADD COLUMN is_loop INTEGER NOT NULL DEFAULT 0');
+    }
+    if (oldVersion < 3) {
+      // Migration v2 → v3: add audio trim (corte) columns
+      await db.execute('ALTER TABLE pads ADD COLUMN start_ms INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE pads ADD COLUMN end_ms INTEGER NOT NULL DEFAULT 0');
     }
   }
 
