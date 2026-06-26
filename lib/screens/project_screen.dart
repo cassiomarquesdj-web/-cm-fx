@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
 import '../models/pad.dart';
+import '../models/fx_type.dart';
 import '../services/database_service.dart';
 import '../services/audio_service.dart';
 import '../widgets/pad_widget.dart';
+import '../widgets/fx_rail.dart';
 import 'edit_pad_screen.dart';
 import 'stage_mode_screen.dart';
 
@@ -20,6 +22,7 @@ class _ProjectScreenState extends State<ProjectScreen> {
   List<Pad> _pads = [];
   bool _isLoading = true;
   final AudioService _audioService = AudioService.instance;
+  FxType? _armedFx;
 
   @override
   void initState() {
@@ -49,6 +52,13 @@ class _ProjectScreenState extends State<ProjectScreen> {
 
   Future<void> _playPad(Pad pad) async {
     if (pad.audioPath != null && pad.audioPath!.isNotEmpty) {
+      // FX armado: toca a vinheta com o efeito e desarma
+      if (_armedFx != null) {
+        final fx = _armedFx!;
+        setState(() => _armedFx = null);
+        await _audioService.playPadWithFx(pad, fx);
+        return;
+      }
       // If already playing and looping → stop it (very useful in live performance)
       if (_audioService.isPlaying(pad.position) && pad.isLoop) {
         await _audioService.stop(pad.position);
@@ -207,30 +217,40 @@ class _ProjectScreenState extends State<ProjectScreen> {
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _stopAllAudio,
-                  icon: const Icon(Icons.stop_rounded),
-                  label: const Text('PARAR TODOS',
-                      style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5)),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                  ),
-                ),
+              FxRail(
+                armed: _armedFx,
+                onSelect: (fx) => setState(() => _armedFx = fx),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _openStageMode,
-                  icon: const Icon(Icons.fullscreen_rounded),
-                  label: const Text('MODO PALCO',
-                      style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _stopAllAudio,
+                      icon: const Icon(Icons.stop_rounded),
+                      label: const Text('PARAR TODOS',
+                          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _openStageMode,
+                      icon: const Icon(Icons.fullscreen_rounded),
+                      label: const Text('MODO PALCO',
+                          style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

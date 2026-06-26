@@ -5,6 +5,7 @@ import '../models/pad.dart';
 import '../services/database_service.dart';
 import '../services/file_service.dart';
 import '../services/audio_service.dart';
+import '../widgets/waveform_view.dart';
 
 class EditPadScreen extends StatefulWidget {
   final Pad pad;
@@ -30,6 +31,7 @@ class _EditPadScreenState extends State<EditPadScreen> {
   late int _startMs;
   late int _endMs;
   Duration? _audioDuration;
+  List<double> _waveBars = [];
 
   final AudioService _audioService = AudioService.instance;
   final FileService _fileService = FileService.instance;
@@ -57,6 +59,17 @@ class _EditPadScreenState extends State<EditPadScreen> {
     });
 
     _loadDuration();
+    _loadWaveform();
+  }
+
+  Future<void> _loadWaveform() async {
+    if (_audioPath == null || _audioPath!.isEmpty) {
+      if (mounted) setState(() => _waveBars = []);
+      return;
+    }
+    final bars = await _fileService.buildWaveformBars(_audioPath!);
+    if (!mounted) return;
+    setState(() => _waveBars = bars);
   }
 
   Future<void> _loadDuration() async {
@@ -99,8 +112,10 @@ class _EditPadScreenState extends State<EditPadScreen> {
         _startMs = 0;
         _endMs = 0;
         _audioDuration = null;
+        _waveBars = [];
       });
       await _loadDuration();
+      await _loadWaveform();
     }
   }
 
@@ -555,6 +570,18 @@ class _EditPadScreenState extends State<EditPadScreen> {
                             style: TextStyle(color: Colors.white54, fontSize: 13)),
                       )
                     else ...[
+                      if (_waveBars.isNotEmpty) ...[
+                        WaveformView(
+                          bars: _waveBars,
+                          startFraction: _audioDuration!.inMilliseconds > 0
+                              ? _startMs / _audioDuration!.inMilliseconds
+                              : 0,
+                          endFraction: _audioDuration!.inMilliseconds > 0
+                              ? _endMs / _audioDuration!.inMilliseconds
+                              : 1,
+                        ),
+                        const SizedBox(height: 4),
+                      ],
                       RangeSlider(
                         min: 0,
                         max: _audioDuration!.inMilliseconds.toDouble(),

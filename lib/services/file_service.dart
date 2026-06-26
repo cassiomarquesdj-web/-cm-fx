@@ -95,4 +95,51 @@ class FileService {
       debugPrint('Error deleting file: $e');
     }
   }
+
+  /// Gera uma envoltória de amplitude (0..1) para desenhar o waveform.
+  /// Lê os bytes do arquivo e calcula a magnitude média por bloco.
+  /// Para áudio comprimido é uma aproximação visual estável (não o PCM real),
+  /// mas serve bem como guia de corte por tempo.
+  Future<List<double>> buildWaveformBars(String path, {int buckets = 120}) async {
+    try {
+      final file = File(path);
+      if (!await file.exists()) return [];
+      final bytes = await file.readAsBytes();
+      final n = bytes.length;
+      if (n == 0) return [];
+
+      // Pula o cabeçalho (até ~1KB) que costuma ser metadado, não áudio.
+      final headerSkip = n > 2048 ? 1024 : 0;
+      final usable = n - headerSkip;
+      final per = (usable / buckets).ceil().clamp(1, usable);
+      // Amostra com passo para não varrer arquivos grandes byte a byte.
+      final stride = (per / 64).ceil().clamp(1, per);
+
+      final raw = <double>[];
+      for (int b = 0; b < buckets; b++) {
+        final from = headerSkip + b * per;
+        if (from >= n) {
+          raw.add(0);
+          continue;
+        }
+        final to = (from + per) < n ? (from + per) : n;
+        double sum = 0;
+        int cnt = 0;
+        for (int i = from; i < to; i += stride) {
+          sum += (bytes[i] - 128).abs();
+          cnt++;
+        }
+        raw.add(cnt > 0 ? (sum / cnt) / 128.0 : 0);
+      }
+
+      double maxV = 0.0001;
+      for (final v in raw) {
+        if (v > maxV) maxV = v;
+      }
+      return raw.map((v) => (v / maxV).clamp(0.05, 1.0)).toList();
+    } catch (e) {
+      debugPrint('Error building waveform: $e');
+      return [];
+    }
+  }
 }

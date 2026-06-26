@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/project.dart';
 import '../models/pad.dart';
+import '../models/fx_type.dart';
 import '../services/database_service.dart';
 import '../services/audio_service.dart';
 import '../widgets/pad_widget.dart';
+import '../widgets/fx_rail.dart';
 
 class StageModeScreen extends StatefulWidget {
   final Project project;
@@ -19,6 +21,7 @@ class _StageModeScreenState extends State<StageModeScreen> {
   List<Pad> _pads = [];
   bool _isLoading = true;
   final AudioService _audioService = AudioService.instance;
+  FxType? _armedFx;
 
   @override
   void initState() {
@@ -58,6 +61,13 @@ class _StageModeScreenState extends State<StageModeScreen> {
 
   Future<void> _playPad(Pad pad) async {
     if (pad.audioPath != null && pad.audioPath!.isNotEmpty) {
+      // FX armado: toca com efeito e desarma
+      if (_armedFx != null) {
+        final fx = _armedFx!;
+        setState(() => _armedFx = null);
+        await _audioService.playPadWithFx(pad, fx);
+        return;
+      }
       // If already playing and looping → stop it (very useful in live performance)
       if (_audioService.isPlaying(pad.position) && pad.isLoop) {
         await _audioService.stop(pad.position);
@@ -183,45 +193,55 @@ class _StageModeScreenState extends State<StageModeScreen> {
             ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _stopAll,
-                  icon: const Icon(Icons.stop_rounded),
-                  label: const Text('PARAR TUDO'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white70,
-                    side: const BorderSide(color: Colors.white24),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
+              FxRail(
+                armed: _armedFx,
+                onSelect: (fx) => setState(() => _armedFx = fx),
               ),
-              const SizedBox(width: 12),
-              // PANIC button - essential for live performance
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    await _audioService.stopAll();
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('PANIC! Todos os áudios parados'),
-                          backgroundColor: Colors.redAccent,
-                          duration: Duration(milliseconds: 900),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.warning_amber_rounded),
-                  label: const Text('PANIC'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _stopAll,
+                      icon: const Icon(Icons.stop_rounded),
+                      label: const Text('PARAR TUDO'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        side: const BorderSide(color: Colors.white24),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  // PANIC button - essential for live performance
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        await _audioService.stopAll();
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('PANIC! Todos os áudios parados'),
+                              backgroundColor: Colors.redAccent,
+                              duration: Duration(milliseconds: 900),
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.warning_amber_rounded),
+                      label: const Text('PANIC'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.redAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
